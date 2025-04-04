@@ -51,13 +51,38 @@ class Shape:
         painter.setBrush(self.color)
 
         if self._is_selected:
-            pen = QtGui.QPen(QtGui.QColor(0, 0, 0))   # Синий цвет для пунктирного контура
-            pen.setStyle(QtCore.Qt.DashLine)  # Пунктирный стиль
-            pen.setWidth(2)  # Толщина линии (опционально)
+            pen = QtGui.QPen(QtGui.QColor(0, 0, 0))
+            pen.setStyle(QtCore.Qt.DashLine)
+            pen.setWidth(2)
         else:
-            pen = QtGui.QPen(QtGui.QColor(0, 0, 0))  # Белый цвет контура (или другой, если нужно)
+            pen = QtGui.QPen(QtGui.QColor(0, 0, 0))
 
         painter.setPen(pen)
+
+    def _borders(self, half_width, half_height):
+        width = window.drawing_widget.width()
+        height = window.drawing_widget.height()
+        if half_width * 2 >= width or half_height * 2 >= height:
+            if width > height:
+                self._y = height / 2
+            else:
+                self._x = width / 2
+        else:
+            if self._x - half_width <= 0:
+                self._x = half_width
+            if self._x + half_width > width:
+                self._x = width - half_width
+
+            if self._y - half_height <= 0:
+                self._y = half_height
+            if self._y + half_height > height:
+                self._y = height - half_height
+
+    def _increase(self):
+        pass
+
+    def _reduce(self):
+        pass
 
 
 class CCircle(Shape):
@@ -66,6 +91,7 @@ class CCircle(Shape):
         self._radius = 25
 
     def draw(self, painter):
+        self._borders(self._radius, self._radius)
         self.set_brush_settings(painter)
         x = self._x - self._radius
         y = self._y - self._radius
@@ -75,14 +101,28 @@ class CCircle(Shape):
         if ((self._x - x) ** 2 + (self._y - y) ** 2) <= self._radius ** 2:
             return True
 
+    def _increase(self):
+        width = window.drawing_widget.width()
+        height = window.drawing_widget.height()
+        if self._radius >= width or self._radius >= width:
+            self._radius = min(width, height)
+        else:
+            self._radius += 1
+
+    def _reduce(self):
+        if self._radius <= 5:
+            return
+        self._radius -= 1
+
 
 class Ellipse(Shape):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self._width_radius = 40
+        self._width_radius = 50
         self._height_radius = 25
 
     def draw(self, painter):
+        self._borders(self._width_radius, self._height_radius)
         self.set_brush_settings(painter)
         x = self._x - self._width_radius
         y = self._y - self._height_radius
@@ -99,6 +139,7 @@ class Square(Shape):
         self._half_width = 25
 
     def draw(self, painter):
+        self._borders(self._half_width, self._half_width)
         self.set_brush_settings(painter)
         x = self._x - self._half_width
         y = self._y - self._half_width
@@ -112,10 +153,11 @@ class Square(Shape):
 class Rectangle(Shape):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self._half_width = 40
+        self._half_width = 50
         self._half_height = 25
 
     def draw(self, painter):
+        self._borders(self._half_width, self._half_height)
         self.set_brush_settings(painter)
         x = self._x - self._half_width
         y = self._y - self._half_height
@@ -132,6 +174,7 @@ class Triangle(Shape):
         self._half_width = 25
 
     def draw(self, painter):
+        self._borders(self._half_width, self._half_width)
         self.set_brush_settings(painter)
 
         painter.drawPolygon([QtCore.QPoint(self._x, self._y - self._half_width),
@@ -157,7 +200,6 @@ class Container:
     def __init__(self):
         self.__circles = []
         self.__size = 0
-        self._selected_shape = CCircle
 
     def __iter__(self):
         return iter(self.__circles)
@@ -212,10 +254,18 @@ class PaintWindow(QtWidgets.QWidget):
             i.highlight_checking(x, y, pressed)
 
     def keyPressEvent(self, event):
+        print(event.key())
         if event.matches(QtGui.QKeySequence.SelectAll):
             self.select_all()
         if event.key() == Qt.Key_Delete:
             self.delete_selected()
+
+        if event.key() == Qt.Key_Equal:
+            for curr in self.container:
+                if curr.get_status():
+                    pass
+        if event.key() == Qt.Key_Minus:
+            ...
 
         if event.key() == Qt.Key_Right:
             for curr in self.container:
@@ -269,7 +319,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.central)
 
     def create_button_row(self):
-        """Создает горизонтальный ряд кнопок для выбора фигуры"""
+        # Создает горизонтальный ряд кнопок для выбора фигуры
         self.button_layout = QtWidgets.QHBoxLayout()
 
         # Создаем кнопки для каждой фигуры
@@ -304,7 +354,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def set_shape(self, selected_button):
         print(selected_button.text())
-        """Устанавливает выбранную фигуру и обновляет внешний вид кнопок"""
+        # Устанавливает выбранную фигуру и обновляет внешний вид кнопок
         for curr in self.buttons.keys():
             if curr == selected_button.text():
                 self.buttons[curr].setStyleSheet("background-color: lightblue; font-weight: bold;")
