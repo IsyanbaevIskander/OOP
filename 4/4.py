@@ -62,26 +62,30 @@ class Shape:
     def _borders(self, half_width, half_height):
         width = window.drawing_widget.width()
         height = window.drawing_widget.height()
+        print(width, height, half_width, half_height)
         if half_width * 2 >= width or half_height * 2 >= height:
             if width > height:
                 self._y = height / 2
             else:
                 self._x = width / 2
-        else:
-            if self._x - half_width <= 0:
-                self._x = half_width
-            if self._x + half_width > width:
-                self._x = width - half_width
 
-            if self._y - half_height <= 0:
-                self._y = half_height
-            if self._y + half_height > height:
-                self._y = height - half_height
+        if self._x - half_width <= 0:
+            self._x = half_width
+        if self._x + half_width > width:
+            self._x = width - half_width
 
-    def _increase(self):
+        if self._y - half_height <= 0:
+            self._y = half_height
+        if self._y + half_height > height:
+            self._y = height - half_height
+
+    def increase(self):
         pass
 
-    def _reduce(self):
+    def reduce(self):
+        pass
+
+    def get_extreme_points(self):
         pass
 
 
@@ -101,18 +105,21 @@ class CCircle(Shape):
         if ((self._x - x) ** 2 + (self._y - y) ** 2) <= self._radius ** 2:
             return True
 
-    def _increase(self):
+    def increase(self):
         width = window.drawing_widget.width()
         height = window.drawing_widget.height()
-        if self._radius >= width or self._radius >= width:
-            self._radius = min(width, height)
+        if self._radius * 2 + 1 >= width or self._radius * 2 + 1 >= height:
+            self._radius = min(width, height) // 2
         else:
             self._radius += 1
 
-    def _reduce(self):
+    def reduce(self):
         if self._radius <= 5:
             return
         self._radius -= 1
+
+    def get_extreme_points(self):
+        return self._x + self._radius, self._y + self._radius
 
 
 class Ellipse(Shape):
@@ -132,6 +139,31 @@ class Ellipse(Shape):
         if (((self._x - x) ** 2) / self._width_radius ** 2 + ((self._y - y) ** 2) / self._height_radius ** 2) <= 1:
             return True
 
+    def increase(self):
+        width = window.drawing_widget.width()
+        height = window.drawing_widget.height()
+        is_big = False
+        if self._width_radius * 2 + 2 >= width:
+            is_big = True
+            self._width_radius = width // 2 - (width // 2) % 2
+            self._height_radius = self._width_radius / 2
+        if self._height_radius * 2 + 1 >= height:
+            is_big = True
+            self._height_radius = height // 2
+            self._width_radius = self._height_radius * 2
+        if not is_big:
+            self._width_radius += 2
+            self._height_radius += 1
+
+    def reduce(self):
+        if self._height_radius <= 5:
+            return
+        self._width_radius -= 2
+        self._height_radius -= 1
+
+    def get_extreme_points(self):
+        return self._x + self._width_radius, self._y + self._height_radius
+
 
 class Square(Shape):
     def __init__(self, x, y):
@@ -148,6 +180,22 @@ class Square(Shape):
     def in_area(self, x, y):
         if abs(self._x - x) <= self._half_width and abs(self._y - y) <= self._half_width:
             return True
+
+    def increase(self):
+        width = window.drawing_widget.width()
+        height = window.drawing_widget.height()
+        if self._half_width * 2 + 1 >= width or self._half_width * 2 + 1 >= height:
+            self._half_width = min(width, height) // 2
+        else:
+            self._half_width += 1
+
+    def reduce(self):
+        if self._half_width <= 5:
+            return
+        self._half_width -= 1
+
+    def get_extreme_points(self):
+        return self._x + self._half_width, self._y + self._half_width
 
 
 class Rectangle(Shape):
@@ -166,6 +214,31 @@ class Rectangle(Shape):
     def in_area(self, x, y):
         if abs(self._x - x) <= self._half_width and abs(self._y - y) <= self._half_height:
             return True
+
+    def increase(self):
+        width = window.drawing_widget.width()
+        height = window.drawing_widget.height()
+        is_big = False
+        if self._half_width * 2 + 2 >= width:
+            is_big = True
+            self._half_width = width // 2 - (width // 2) % 2
+            self._half_height = self._half_width / 2
+        if self._half_height * 2 + 1 >= height:
+            is_big = True
+            self._half_height = height // 2
+            self._half_width = self._half_height * 2
+        if not is_big:
+            self._half_width += 2
+            self._half_height += 1
+
+    def reduce(self):
+        if self._half_height <= 5:
+            return
+        self._half_width -= 2
+        self._half_height -= 1
+
+    def get_extreme_points(self):
+        return self._x + self._half_width, self._y + self._half_height
 
 
 class Triangle(Shape):
@@ -194,6 +267,67 @@ class Triangle(Shape):
 
     def square(self, a, b, c):
         return abs(a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])) / 2.0
+
+    def increase(self):
+        width = window.drawing_widget.width()
+        height = window.drawing_widget.height()
+        if self._half_width * 2 + 1 >= width or self._half_width * 2 + 1 >= height:
+            self._half_width = min(width, height) // 2
+        else:
+            self._half_width += 1
+
+    def reduce(self):
+        if self._half_width <= 5:
+            return
+        self._half_width -= 1
+
+    def get_extreme_points(self):
+        return self._x + self._half_width, self._y + self._half_width
+
+
+class Line(Shape):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self._half_width = 25
+        self.color = QtGui.QColor(QtCore.Qt.black)
+
+    def draw(self, painter):
+        self._borders(self._half_width, 1)
+        self.set_brush_settings(painter)
+        painter.drawLine(self._x - self._half_width, self._y, self._x + self._half_width, self._y)
+
+    def in_area(self, x, y):
+        if abs(self._y - y) >= 3:
+            return False
+
+        return abs(self._x - x) <= self._half_width
+
+    def increase(self):
+        width = window.drawing_widget.width()
+        if self._half_width * 2 + 1 >= width:
+            self._half_width = width // 2
+        else:
+            self._half_width += 1
+
+    def reduce(self):
+        if self._half_width <= 5:
+            return
+        self._half_width -= 1
+
+    def get_extreme_points(self):
+        return self._x + self._half_width, self._y
+
+    def set_brush_settings(self, painter):
+        if self._is_selected:
+            pen = QtGui.QPen(self.color)
+            pen.setStyle(QtCore.Qt.DashLine)
+            pen.setWidth(2)
+        else:
+            pen = QtGui.QPen(self.color)  # Сплошная линия обычного цвета
+            pen.setWidth(2)  # Обычная толщина
+
+        painter.setPen(pen)
+        painter.setBrush(QtCore.Qt.NoBrush)
 
 
 class Container:
@@ -232,8 +366,18 @@ class PaintWindow(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
+        max_y = 0
+        max_x = 0
         for i in self.container:
             i.draw(painter)
+            curr_x, curr_y = i.get_extreme_points()
+            max_x = max(max_x, curr_x)
+            max_y = max(max_y, curr_y)
+            print(i.get_x(), i.get_y())
+            print(i.get_extreme_points())
+        print(max_x, max_y)
+        self.setMinimumWidth(max_x)
+        self.setMinimumHeight(max_y)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -254,7 +398,6 @@ class PaintWindow(QtWidgets.QWidget):
             i.highlight_checking(x, y, pressed)
 
     def keyPressEvent(self, event):
-        print(event.key())
         if event.matches(QtGui.QKeySequence.SelectAll):
             self.select_all()
         if event.key() == Qt.Key_Delete:
@@ -263,9 +406,11 @@ class PaintWindow(QtWidgets.QWidget):
         if event.key() == Qt.Key_Equal:
             for curr in self.container:
                 if curr.get_status():
-                    pass
+                    curr.increase()
         if event.key() == Qt.Key_Minus:
-            ...
+            for curr in self.container:
+                if curr.get_status():
+                    curr.reduce()
 
         if event.key() == Qt.Key_Right:
             for curr in self.container:
@@ -328,7 +473,6 @@ class MainWindow(QtWidgets.QMainWindow):
             button = QtWidgets.QPushButton(shape, self)
             self.button_layout.addWidget(button)
             self.buttons[shape] = button
-            print(self.buttons[shape].text())
             button.clicked.connect(lambda checked, s=shape: self.set_shape(self.buttons[s]))
             if shape == "Круг":
                 button.setStyleSheet("background-color: lightblue; font-weight: bold;")
@@ -353,7 +497,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update()
 
     def set_shape(self, selected_button):
-        print(selected_button.text())
         # Устанавливает выбранную фигуру и обновляет внешний вид кнопок
         for curr in self.buttons.keys():
             if curr == selected_button.text():
@@ -365,7 +508,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 shapes = {"Круг": CCircle, "Эллипс": Ellipse, "Квадрат": Square,
-          "Прямоугольник": Rectangle, "Треугольник": Triangle}
+          "Прямоугольник": Rectangle, "Треугольник": Triangle, "Отрезок": Line}
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
