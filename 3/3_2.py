@@ -37,7 +37,6 @@ class Numbers(QtCore.QObject):
             self.__b = value
             if value > self.__c:
                 self.__c = value
-        print("A")
         self.signal.send(self.get())
 
     def set_b(self, value):
@@ -56,7 +55,6 @@ class Numbers(QtCore.QObject):
             self.__b = self.__c
         else:
             self.__b = value
-        print("B")
         self.signal.send(self.get())
 
     def set_c(self, value):
@@ -81,7 +79,6 @@ class Numbers(QtCore.QObject):
             self.__b = value
             if value < self.__a:
                 self.__a = value
-        print("C")
         self.signal.send(self.get())
 
     def get(self):
@@ -153,9 +150,9 @@ class Window(QtWidgets.QWidget):
         self.third_layout.addWidget(slider)
 
     def connecting(self):
-        self.text_a.editingFinished.connect(lambda: numbers.set_a(self.text_a.text()))
-        self.text_b.editingFinished.connect(lambda: numbers.set_b(self.text_b.text()))
-        self.text_c.editingFinished.connect(lambda: numbers.set_c(self.text_c.text()))
+        self.text_a.editingFinished.connect(lambda: self.check_line_edits(self.text_a, self.spin_a, numbers.set_a))
+        self.text_b.editingFinished.connect(lambda: self.check_line_edits(self.text_b, self.spin_b, numbers.set_b))
+        self.text_c.editingFinished.connect(lambda: self.check_line_edits(self.text_c, self.spin_c, numbers.set_c))
 
         self.spin_a.editingFinished.connect(lambda: numbers.set_a(self.spin_a.value()))
         self.spin_b.editingFinished.connect(lambda: numbers.set_b(self.spin_b.value()))
@@ -174,6 +171,13 @@ class Window(QtWidgets.QWidget):
         self.slider_c.valueChanged.connect(lambda: self.press_slider(self.slider_c.value(), "c"))
         numbers.signal.connect(self.updating)
         numbers.signal.send(numbers.get())
+
+    def check_line_edits(self, lineedit, spin, method):
+        text = lineedit.text()
+        if not text.isdigit():
+            lineedit.setText(str(spin.value()))
+            return
+        method(text)
 
     def press_slider(self, value, flag):
         if flag == "a":
