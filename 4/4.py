@@ -62,7 +62,7 @@ class Shape:
     def _borders(self, half_width, half_height):
         width = window.drawing_widget.width()
         height = window.drawing_widget.height()
-        print(width, height, half_width, half_height)
+
         if half_width * 2 >= width or half_height * 2 >= height:
             if width > height:
                 self._y = height / 2
@@ -93,9 +93,18 @@ class CCircle(Shape):
     def __init__(self, x, y):
         super().__init__(x, y)
         self._radius = 25
+        self._borders(self._radius, self._radius)
+
+    def set_x(self, x):
+        super().set_x(x)
+        self._borders(self._radius, self._radius)
+
+    def set_y(self, y):
+        super().set_y(y)
+        self._borders(self._radius, self._radius)
 
     def draw(self, painter):
-        self._borders(self._radius, self._radius)
+        # self._borders(self._radius, self._radius)
         self.set_brush_settings(painter)
         x = self._x - self._radius
         y = self._y - self._radius
@@ -112,6 +121,7 @@ class CCircle(Shape):
             self._radius = min(width, height) // 2
         else:
             self._radius += 1
+        self._borders(self._radius, self._radius)
 
     def reduce(self):
         if self._radius <= 5:
@@ -119,7 +129,7 @@ class CCircle(Shape):
         self._radius -= 1
 
     def get_extreme_points(self):
-        return self._x + self._radius, self._y + self._radius
+        return self._x + self._radius, self._y + self._radius, self._x - self._radius, self._y - self._radius
 
 
 class Ellipse(Shape):
@@ -127,9 +137,18 @@ class Ellipse(Shape):
         super().__init__(x, y)
         self._width_radius = 50
         self._height_radius = 25
+        self._borders(self._width_radius, self._height_radius)
+
+    def set_x(self, x):
+        super().set_x(x)
+        self._borders(self._width_radius, self._height_radius)
+
+    def set_y(self, y):
+        super().set_y(y)
+        self._borders(self._width_radius, self._height_radius)
 
     def draw(self, painter):
-        self._borders(self._width_radius, self._height_radius)
+        # self._borders(self._width_radius, self._height_radius)
         self.set_brush_settings(painter)
         x = self._x - self._width_radius
         y = self._y - self._height_radius
@@ -143,17 +162,18 @@ class Ellipse(Shape):
         width = window.drawing_widget.width()
         height = window.drawing_widget.height()
         is_big = False
-        if self._width_radius * 2 + 2 >= width:
+        if self._width_radius * 2 + 4 >= width:
             is_big = True
             self._width_radius = width // 2 - (width // 2) % 2
             self._height_radius = self._width_radius / 2
-        if self._height_radius * 2 + 1 >= height:
+        if self._height_radius * 2 + 2 >= height:
             is_big = True
             self._height_radius = height // 2
             self._width_radius = self._height_radius * 2
         if not is_big:
             self._width_radius += 2
             self._height_radius += 1
+        self._borders(self._width_radius, self._height_radius)
 
     def reduce(self):
         if self._height_radius <= 5:
@@ -162,16 +182,26 @@ class Ellipse(Shape):
         self._height_radius -= 1
 
     def get_extreme_points(self):
-        return self._x + self._width_radius, self._y + self._height_radius
+        return (self._x + self._width_radius, self._y + self._height_radius,
+                self._x - self._width_radius, self._y - self._height_radius)
 
 
 class Square(Shape):
     def __init__(self, x, y):
         super().__init__(x, y)
         self._half_width = 25
+        self._borders(self._half_width, self._half_width)
+
+    def set_x(self, x):
+        super().set_x(x)
+        self._borders(self._half_width, self._half_width)
+
+    def set_y(self, y):
+        super().set_y(y)
+        self._borders(self._half_width, self._half_width)
 
     def draw(self, painter):
-        self._borders(self._half_width, self._half_width)
+        # self._borders(self._half_width, self._half_width)
         self.set_brush_settings(painter)
         x = self._x - self._half_width
         y = self._y - self._half_width
@@ -184,10 +214,11 @@ class Square(Shape):
     def increase(self):
         width = window.drawing_widget.width()
         height = window.drawing_widget.height()
-        if self._half_width * 2 + 1 >= width or self._half_width * 2 + 1 >= height:
+        if self._half_width * 2 >= width or self._half_width * 2 >= height:
             self._half_width = min(width, height) // 2
         else:
             self._half_width += 1
+        self._borders(self._half_width, self._half_width)
 
     def reduce(self):
         if self._half_width <= 5:
@@ -195,7 +226,8 @@ class Square(Shape):
         self._half_width -= 1
 
     def get_extreme_points(self):
-        return self._x + self._half_width, self._y + self._half_width
+        return (self._x + self._half_width, self._y + self._half_width,
+                self._x - self._half_width, self._y - self._half_width)
 
 
 class Rectangle(Shape):
@@ -203,9 +235,18 @@ class Rectangle(Shape):
         super().__init__(x, y)
         self._half_width = 50
         self._half_height = 25
+        self._borders(self._half_width, self._half_height)
+
+    def set_x(self, x):
+        super().set_x(x)
+        self._borders(self._half_width, self._half_height)
+
+    def set_y(self, y):
+        super().set_y(y)
+        self._borders(self._half_width, self._half_height)
 
     def draw(self, painter):
-        self._borders(self._half_width, self._half_height)
+        # self._borders(self._half_width, self._half_height)
         self.set_brush_settings(painter)
         x = self._x - self._half_width
         y = self._y - self._half_height
@@ -219,17 +260,18 @@ class Rectangle(Shape):
         width = window.drawing_widget.width()
         height = window.drawing_widget.height()
         is_big = False
-        if self._half_width * 2 + 2 >= width:
+        if self._half_width * 2 + 4 >= width:
             is_big = True
             self._half_width = width // 2 - (width // 2) % 2
             self._half_height = self._half_width / 2
-        if self._half_height * 2 + 1 >= height:
+        if self._half_height * 2 + 2 >= height:
             is_big = True
             self._half_height = height // 2
             self._half_width = self._half_height * 2
         if not is_big:
             self._half_width += 2
             self._half_height += 1
+        self._borders(self._half_width, self._half_height)
 
     def reduce(self):
         if self._half_height <= 5:
@@ -238,16 +280,26 @@ class Rectangle(Shape):
         self._half_height -= 1
 
     def get_extreme_points(self):
-        return self._x + self._half_width, self._y + self._half_height
+        return (self._x + self._half_width, self._y + self._half_height,
+                self._x - self._half_width, self._y - self._half_height)
 
 
 class Triangle(Shape):
     def __init__(self, x, y):
         super().__init__(x, y)
         self._half_width = 25
+        self._borders(self._half_width, self._half_width)
+
+    def set_x(self, x):
+        super().set_x(x)
+        self._borders(self._half_width, self._half_width)
+
+    def set_y(self, y):
+        super().set_y(y)
+        self._borders(self._half_width, self._half_width)
 
     def draw(self, painter):
-        self._borders(self._half_width, self._half_width)
+        # self._borders(self._half_width, self._half_width)
         self.set_brush_settings(painter)
 
         painter.drawPolygon([QtCore.QPoint(self._x, self._y - self._half_width),
@@ -275,6 +327,7 @@ class Triangle(Shape):
             self._half_width = min(width, height) // 2
         else:
             self._half_width += 1
+        self._borders(self._half_width, self._half_width)
 
     def reduce(self):
         if self._half_width <= 5:
@@ -282,7 +335,8 @@ class Triangle(Shape):
         self._half_width -= 1
 
     def get_extreme_points(self):
-        return self._x + self._half_width, self._y + self._half_width
+        return (self._x + self._half_width, self._y + self._half_width,
+                self._x - self._half_width, self._y - self._half_width)
 
 
 class Line(Shape):
@@ -290,9 +344,18 @@ class Line(Shape):
         super().__init__(x, y)
         self._half_width = 25
         self.color = QtGui.QColor(QtCore.Qt.black)
+        self._borders(self._half_width, 1)
+
+    def set_x(self, x):
+        super().set_x(x)
+        self._borders(self._half_width, 1)
+
+    def set_y(self, y):
+        super().set_y(y)
+        self._borders(self._half_width, 1)
 
     def draw(self, painter):
-        self._borders(self._half_width, 1)
+        # self._borders(self._half_width, 1)
         self.set_brush_settings(painter)
         painter.drawLine(self._x - self._half_width, self._y, self._x + self._half_width, self._y)
 
@@ -308,6 +371,7 @@ class Line(Shape):
             self._half_width = width // 2
         else:
             self._half_width += 1
+        self._borders(self._half_width, 1)
 
     def reduce(self):
         if self._half_width <= 5:
@@ -315,7 +379,7 @@ class Line(Shape):
         self._half_width -= 1
 
     def get_extreme_points(self):
-        return self._x + self._half_width, self._y
+        return self._x + self._half_width, self._y, self._x - self._half_width, self._y
 
     def set_brush_settings(self, painter):
         if self._is_selected:
@@ -368,14 +432,13 @@ class PaintWindow(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         max_y = 0
         max_x = 0
+
         for i in self.container:
             i.draw(painter)
-            curr_x, curr_y = i.get_extreme_points()
+            curr_x, curr_y = i.get_extreme_points()[:2]
             max_x = max(max_x, curr_x)
             max_y = max(max_y, curr_y)
-            print(i.get_x(), i.get_y())
-            print(i.get_extreme_points())
-        print(max_x, max_y)
+
         self.setMinimumWidth(max_x)
         self.setMinimumHeight(max_y)
 
@@ -415,20 +478,24 @@ class PaintWindow(QtWidgets.QWidget):
         if event.key() == Qt.Key_Right:
             for curr in self.container:
                 if curr.get_status():
+                    # if curr.get_extreme_points()[0] < self.width():
                     curr.set_x(curr.get_x() + 1)
         if event.key() == Qt.Key_Left:
             for curr in self.container:
                 if curr.get_status():
+                    # if curr.get_extreme_points()[2] > 0:
                     curr.set_x(curr.get_x() - 1)
 
         if event.key() == Qt.Key_Up:
             for curr in self.container:
                 if curr.get_status():
+                    # if curr.get_extreme_points()[3] > 0:
                     curr.set_y(curr.get_y() - 1)
 
         if event.key() == Qt.Key_Down:
             for curr in self.container:
                 if curr.get_status():
+                    # if curr.get_extreme_points()[1] < self.height():
                     curr.set_y(curr.get_y() + 1)
 
         self.update()
@@ -464,11 +531,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.central)
 
     def create_button_row(self):
-        # Создает горизонтальный ряд кнопок для выбора фигуры
         self.button_layout = QtWidgets.QHBoxLayout()
 
-        # Создаем кнопки для каждой фигуры
-        self.buttons = {}  # Словарь для хранения кнопок
+        self.buttons = {}
         for shape in shapes.keys():
             button = QtWidgets.QPushButton(shape, self)
             self.button_layout.addWidget(button)
@@ -497,7 +562,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update()
 
     def set_shape(self, selected_button):
-        # Устанавливает выбранную фигуру и обновляет внешний вид кнопок
+
         for curr in self.buttons.keys():
             if curr == selected_button.text():
                 self.buttons[curr].setStyleSheet("background-color: lightblue; font-weight: bold;")
