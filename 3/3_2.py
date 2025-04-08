@@ -23,13 +23,12 @@ class Numbers(QtCore.QObject):
         if value == self.__a:
             return
 
-        if value <= 0:
-            self.__a = 0
-            return
         if value >= 100:
             self.__a = 100
             self.__b = 100
             self.__c = 100
+            print("A")
+            self.signal.send(self.get())
             return
 
         self.__a = value
@@ -37,6 +36,8 @@ class Numbers(QtCore.QObject):
             self.__b = value
             if value > self.__c:
                 self.__c = value
+
+        print("A")
         self.signal.send(self.get())
 
     def set_b(self, value):
@@ -55,6 +56,7 @@ class Numbers(QtCore.QObject):
             self.__b = self.__c
         else:
             self.__b = value
+        print("B")
         self.signal.send(self.get())
 
     def set_c(self, value):
@@ -71,14 +73,22 @@ class Numbers(QtCore.QObject):
             self.__a = 0
             self.__b = 0
             self.__c = 0
+            print("C")
+            self.signal.send(self.get())
+            return
+
         if value >= 100:
             self.__c = 100
+            print("C")
+            self.signal.send(self.get())
+            return
 
         self.__c = value
         if value < self.__b:
             self.__b = value
             if value < self.__a:
                 self.__a = value
+        print("C")
         self.signal.send(self.get())
 
     def get(self):
@@ -132,6 +142,7 @@ class Window(QtWidgets.QWidget):
         self.flag_c = False
         self.slider_c = QtWidgets.QSlider(Qt.Orientation.Horizontal)
         self.slider_tuning(self.slider_c)
+        self.is_updating = False
 
         self.main_layout.addLayout(self.first_layout)
         self.main_layout.addLayout(self.second_layout)
@@ -150,56 +161,118 @@ class Window(QtWidgets.QWidget):
         self.third_layout.addWidget(slider)
 
     def connecting(self):
+        numbers.signal.connect(self.updating)
+        numbers.signal.send(numbers.get())
         self.text_a.editingFinished.connect(lambda: self.check_line_edits(self.text_a, self.spin_a, numbers.set_a))
         self.text_b.editingFinished.connect(lambda: self.check_line_edits(self.text_b, self.spin_b, numbers.set_b))
         self.text_c.editingFinished.connect(lambda: self.check_line_edits(self.text_c, self.spin_c, numbers.set_c))
 
-        self.spin_a.editingFinished.connect(lambda: numbers.set_a(self.spin_a.value()))
-        self.spin_b.editingFinished.connect(lambda: numbers.set_b(self.spin_b.value()))
-        self.spin_c.editingFinished.connect(lambda: numbers.set_c(self.spin_c.value()))
+        self.spin_a.editingFinished.connect(lambda: self.check_spins(self.spin_a, self.text_a, numbers.set_a))
+        self.spin_b.editingFinished.connect(lambda: self.check_spins(self.spin_b, self.text_b, numbers.set_b))
+        self.spin_c.editingFinished.connect(lambda: self.check_spins(self.spin_c, self.text_c, numbers.set_c))
 
-        self.slider_a.sliderPressed.connect(lambda: self.change_flag("a"))
-        self.slider_a.sliderReleased.connect(lambda: numbers.set_a(self.slider_a.value()))
-        self.slider_a.valueChanged.connect(lambda: self.press_slider(self.slider_a.value(), "a"))
+        self.slider_a.valueChanged.connect(
+            lambda: self.check_sliders(self.slider_a, self.spin_a, numbers.set_a, self.flag_a))
+        self.slider_a.sliderPressed.connect(lambda: self.slider_pressed(self.slider_a))
+        self.slider_a.sliderReleased.connect(lambda: self.slider_released(self.slider_a))
 
-        self.slider_b.sliderPressed.connect(lambda: self.change_flag("b"))
-        self.slider_b.sliderReleased.connect(lambda: numbers.set_b(self.slider_b.value()))
-        self.slider_b.valueChanged.connect(lambda: self.press_slider(self.slider_b.value(), "b"))
+        self.slider_b.valueChanged.connect(
+            lambda: self.check_sliders(self.slider_b, self.spin_b, numbers.set_b, self.flag_b))
+        self.slider_b.sliderPressed.connect(lambda: self.slider_pressed(self.slider_b))
+        self.slider_b.sliderReleased.connect(lambda: self.slider_released(self.slider_b))
 
-        self.slider_c.sliderPressed.connect(lambda: self.change_flag("c"))
-        self.slider_c.sliderReleased.connect(lambda: numbers.set_c(self.slider_c.value()))
-        self.slider_c.valueChanged.connect(lambda: self.press_slider(self.slider_c.value(), "c"))
-        numbers.signal.connect(self.updating)
-        numbers.signal.send(numbers.get())
+        self.slider_c.valueChanged.connect(
+            lambda: self.check_sliders(self.slider_c, self.spin_c, numbers.set_c, self.flag_c))
+        self.slider_c.sliderPressed.connect(lambda: self.slider_pressed(self.slider_c))
+        self.slider_c.sliderReleased.connect(lambda: self.slider_released(self.slider_c))
 
     def check_line_edits(self, lineedit, spin, method):
         text = lineedit.text()
         if not text.isdigit():
             lineedit.setText(str(spin.value()))
             return
+
+        if lineedit == self.text_b:
+            if int(text) < int(self.text_a.text()):
+                if spin.value() == self.spin_a.value():
+                    self.text_b.setText(str(self.text_a.text()))
+                    return
+
+            if int(text) > int(self.text_c.text()):
+                if spin.value() == self.spin_c.value():
+                    self.text_b.setText(str(self.text_c.text()))
+                    return
+
         method(text)
 
-    def press_slider(self, value, flag):
-        if flag == "a":
-            if not self.flag_a:
-                numbers.set_a(value)
-        elif flag == "b":
-            if not self.flag_b:
-                numbers.set_b(value)
-        elif flag == "c":
-            if not self.flag_c:
-                numbers.set_c(value)
+    def check_spins(self, spin, lineedit, method):
+        value = spin.value()
 
-    def change_flag(self, flag):
-        if flag == "a":
+        if lineedit == self.text_b:
+            if value < self.spin_a.value():
+                if int(lineedit.text()) == int(self.text_a.text()):
+                    self.spin_b.setValue(self.spin_a.value())
+                    return
+
+            if value > self.spin_c.value():
+                if int(lineedit.text()) == int(self.text_c.text()):
+                    self.spin_b.setValue(self.spin_c.value())
+                    return
+
+        method(value)
+
+    def check_sliders(self, slider, spin, method, flag):
+        if self.is_updating:
+            return
+
+        if flag:
+            return
+
+        value = slider.value()
+
+        if slider == self.slider_b:
+            if value < self.slider_a.value():
+                if spin.value() == self.spin_a.value():
+                    self.slider_b.setValue(self.slider_a.value())
+                    return
+
+            if value > self.slider_c.value():
+                if spin.value() == self.spin_c.value():
+                    self.slider_b.setValue(self.slider_c.value())
+                    return
+
+        method(value)
+
+    def slider_pressed(self, slider):
+        if slider == self.slider_a:
             self.flag_a = True
-        elif flag == "b":
+            return
+
+        if slider == self.slider_b:
             self.flag_b = True
-        else:
+            return
+
+        if slider == self.slider_c:
             self.flag_c = True
-        return
+            return
+
+    def slider_released(self, slider):
+        if slider == self.slider_a:
+            self.flag_a = False
+            self.check_sliders(self.slider_a, self.spin_a, numbers.set_a, self.flag_a)
+            return
+
+        if slider == self.slider_b:
+            self.flag_b = False
+            self.check_sliders(self.slider_b, self.spin_b, numbers.set_b, self.flag_b)
+            return
+
+        if slider == self.slider_c:
+            self.flag_c = False
+            self.check_sliders(self.slider_c, self.spin_c, numbers.set_c, self.flag_c)
 
     def updating(self, nums):
+        self.is_updating = True
         self.text_a.setText(str(nums[0]))
         self.text_b.setText(str(nums[1]))
         self.text_c.setText(str(nums[2]))
@@ -211,15 +284,7 @@ class Window(QtWidgets.QWidget):
         self.slider_a.setValue(nums[0])
         self.slider_b.setValue(nums[1])
         self.slider_c.setValue(nums[2])
-
-        self.flag_a = False
-        self.flag_b = False
-        self.flag_c = False
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            for i in self.array:
-                i.clearFocus()
+        self.is_updating = False
 
 
 def rewrite_file(result):
