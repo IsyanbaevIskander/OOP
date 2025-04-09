@@ -1,11 +1,10 @@
 from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtCore import Qt
-from blinker import Signal
+from PySide6.QtCore import Qt, Signal
 import sys
 
 
 class Numbers(QtCore.QObject):
-    signal = Signal()
+    signal = Signal(list)
 
     def __init__(self, _a, _b, _c):
         super().__init__()
@@ -14,11 +13,8 @@ class Numbers(QtCore.QObject):
         self.__c = c
 
     def set_a(self, value):
-        if type(value) is str:
-            if value.isdigit():
-                value = int(value)
-            else:
-                return
+        if not type(value) is int:
+            return
 
         if value == self.__a:
             return
@@ -28,7 +24,7 @@ class Numbers(QtCore.QObject):
             self.__b = 100
             self.__c = 100
             print("A")
-            self.signal.send(self.get())
+            self.signal.emit(self.get())
             return
 
         self.__a = value
@@ -38,33 +34,31 @@ class Numbers(QtCore.QObject):
                 self.__c = value
 
         print("A")
-        self.signal.send(self.get())
+        self.signal.emit(self.get())
 
     def set_b(self, value):
-        if type(value) is str:
-            if value.isdigit():
-                value = int(value)
-            else:
-                return
+        if not type(value) is int:
+            return
 
         if value == self.__b:
             return
 
         if value < self.__a:
+            if self.__b == self.__a:
+                return
             self.__b = self.__a
         elif value > self.__c:
+            if self.__b == self.__c:
+                return
             self.__b = self.__c
         else:
             self.__b = value
         print("B")
-        self.signal.send(self.get())
+        self.signal.emit(self.get())
 
     def set_c(self, value):
-        if type(value) is str:
-            if value.isdigit():
-                value = int(value)
-            else:
-                return
+        if not type(value) is int:
+            return
 
         if value == self.__c:
             return
@@ -74,13 +68,13 @@ class Numbers(QtCore.QObject):
             self.__b = 0
             self.__c = 0
             print("C")
-            self.signal.send(self.get())
+            self.signal.emit(self.get())
             return
 
         if value >= 100:
             self.__c = 100
             print("C")
-            self.signal.send(self.get())
+            self.signal.emit(self.get())
             return
 
         self.__c = value
@@ -89,7 +83,7 @@ class Numbers(QtCore.QObject):
             if value < self.__a:
                 self.__a = value
         print("C")
-        self.signal.send(self.get())
+        self.signal.emit(self.get())
 
     def get(self):
         return self.__a, self.__b, self.__c
@@ -142,7 +136,6 @@ class Window(QtWidgets.QWidget):
         self.flag_c = False
         self.slider_c = QtWidgets.QSlider(Qt.Orientation.Horizontal)
         self.slider_tuning(self.slider_c)
-        self.is_updating = False
 
         self.main_layout.addLayout(self.first_layout)
         self.main_layout.addLayout(self.second_layout)
@@ -162,86 +155,66 @@ class Window(QtWidgets.QWidget):
 
     def connecting(self):
         numbers.signal.connect(self.updating)
-        numbers.signal.send(numbers.get())
-        self.text_a.editingFinished.connect(lambda: self.check_line_edits(self.text_a, self.spin_a, numbers.set_a))
-        self.text_b.editingFinished.connect(lambda: self.check_line_edits(self.text_b, self.spin_b, numbers.set_b))
-        self.text_c.editingFinished.connect(lambda: self.check_line_edits(self.text_c, self.spin_c, numbers.set_c))
+        self.updating()
 
-        self.spin_a.editingFinished.connect(lambda: self.check_spins(self.spin_a, self.text_a, numbers.set_a))
-        self.spin_b.editingFinished.connect(lambda: self.check_spins(self.spin_b, self.text_b, numbers.set_b))
-        self.spin_c.editingFinished.connect(lambda: self.check_spins(self.spin_c, self.text_c, numbers.set_c))
+        self.text_a.editingFinished.connect(lambda: self.check_line_edits(self.text_a))
+        self.text_b.editingFinished.connect(lambda: self.check_line_edits(self.text_b))
+        self.text_c.editingFinished.connect(lambda: self.check_line_edits(self.text_c))
 
-        self.slider_a.valueChanged.connect(
-            lambda: self.check_sliders(self.slider_a, self.spin_a, numbers.set_a, self.flag_a))
+        self.spin_a.editingFinished.connect(lambda: self.check_spins(self.spin_a))
+        self.spin_b.editingFinished.connect(lambda: self.check_spins(self.spin_b))
+        self.spin_c.editingFinished.connect(lambda: self.check_spins(self.spin_c))
+
+        self.slider_a.valueChanged.connect(lambda: self.check_sliders(self.slider_a))
         self.slider_a.sliderPressed.connect(lambda: self.slider_pressed(self.slider_a))
         self.slider_a.sliderReleased.connect(lambda: self.slider_released(self.slider_a))
 
-        self.slider_b.valueChanged.connect(
-            lambda: self.check_sliders(self.slider_b, self.spin_b, numbers.set_b, self.flag_b))
+        self.slider_b.valueChanged.connect(lambda: self.check_sliders(self.slider_b))
         self.slider_b.sliderPressed.connect(lambda: self.slider_pressed(self.slider_b))
         self.slider_b.sliderReleased.connect(lambda: self.slider_released(self.slider_b))
 
-        self.slider_c.valueChanged.connect(
-            lambda: self.check_sliders(self.slider_c, self.spin_c, numbers.set_c, self.flag_c))
+        self.slider_c.valueChanged.connect(lambda: self.check_sliders(self.slider_c))
         self.slider_c.sliderPressed.connect(lambda: self.slider_pressed(self.slider_c))
         self.slider_c.sliderReleased.connect(lambda: self.slider_released(self.slider_c))
 
-    def check_line_edits(self, lineedit, spin, method):
-        text = lineedit.text()
-        if not text.isdigit():
-            lineedit.setText(str(spin.value()))
-            return
+    def check_line_edits(self, lineedit):
+        value = lineedit.text()
+        if value.isdigit():
+            if lineedit == self.text_a:
+                numbers.set_a(value)
+            if lineedit == self.text_b:
+                numbers.set_b(value)
+            if lineedit == self.text_c:
+                numbers.set_c(value)
+        self.updating()
 
-        if lineedit == self.text_b:
-            if int(text) < int(self.text_a.text()):
-                if spin.value() == self.spin_a.value():
-                    self.text_b.setText(str(self.text_a.text()))
-                    return
-
-            if int(text) > int(self.text_c.text()):
-                if spin.value() == self.spin_c.value():
-                    self.text_b.setText(str(self.text_c.text()))
-                    return
-
-        method(text)
-
-    def check_spins(self, spin, lineedit, method):
+    def check_spins(self, spin):
         value = spin.value()
+        if spin == self.spin_a:
+            numbers.set_a(value)
+        if spin == self.spin_b:
+            numbers.set_b(value)
+        if spin == self.spin_c:
+            numbers.set_c(value)
+        self.updating()
 
-        if lineedit == self.text_b:
-            if value < self.spin_a.value():
-                if int(lineedit.text()) == int(self.text_a.text()):
-                    self.spin_b.setValue(self.spin_a.value())
-                    return
-
-            if value > self.spin_c.value():
-                if int(lineedit.text()) == int(self.text_c.text()):
-                    self.spin_b.setValue(self.spin_c.value())
-                    return
-
-        method(value)
-
-    def check_sliders(self, slider, spin, method, flag):
-        if self.is_updating:
-            return
-
-        if flag:
-            return
-
-        value = slider.value()
+    def check_sliders(self, slider):
+        if slider == self.slider_a:
+            if self.flag_a:
+                return
+            numbers.set_a(slider.value())
 
         if slider == self.slider_b:
-            if value < self.slider_a.value():
-                if spin.value() == self.spin_a.value():
-                    self.slider_b.setValue(self.slider_a.value())
-                    return
+            if self.flag_b:
+                return
+            numbers.set_b(slider.value())
 
-            if value > self.slider_c.value():
-                if spin.value() == self.spin_c.value():
-                    self.slider_b.setValue(self.slider_c.value())
-                    return
+        if slider == self.slider_c:
+            if self.flag_c:
+                return
+            numbers.set_c(slider.value())
 
-        method(value)
+        self.updating()
 
     def slider_pressed(self, slider):
         if slider == self.slider_a:
@@ -259,20 +232,20 @@ class Window(QtWidgets.QWidget):
     def slider_released(self, slider):
         if slider == self.slider_a:
             self.flag_a = False
-            self.check_sliders(self.slider_a, self.spin_a, numbers.set_a, self.flag_a)
+            self.check_sliders(self.slider_a)
             return
 
         if slider == self.slider_b:
             self.flag_b = False
-            self.check_sliders(self.slider_b, self.spin_b, numbers.set_b, self.flag_b)
+            self.check_sliders(self.slider_b)
             return
 
         if slider == self.slider_c:
             self.flag_c = False
-            self.check_sliders(self.slider_c, self.spin_c, numbers.set_c, self.flag_c)
+            self.check_sliders(self.slider_c)
 
-    def updating(self, nums):
-        self.is_updating = True
+    def updating(self):
+        nums = numbers.get()
         self.text_a.setText(str(nums[0]))
         self.text_b.setText(str(nums[1]))
         self.text_c.setText(str(nums[2]))
@@ -284,7 +257,6 @@ class Window(QtWidgets.QWidget):
         self.slider_a.setValue(nums[0])
         self.slider_b.setValue(nums[1])
         self.slider_c.setValue(nums[2])
-        self.is_updating = False
 
 
 def rewrite_file(result):
